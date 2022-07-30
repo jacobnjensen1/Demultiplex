@@ -32,35 +32,36 @@ The tsv file has not been made yet, I'm not sure if I can put anything other tha
 ### General strategy
 - Read the index file to get the list of proper indexes.
 - Open all input fastq files as text, not binary
-- Read the input fastqs simultaneously, one record at a time
-    - Reading will be done in the function readRecords
-    - If readRecords returns None, break
+- Read the input fastqs simultaneously, one record at a time (Reading will be done in the function readRecords, which will return each record as a list of 4 strings.)
+    - If readRecords returns None (when any file finishes), break
     - Look at the indexes first to see which bucket the reads belong in. (I2/R3 must be reverse complimented) The bucket will be the index, "hopped", or "unknown"
-        - If quality of either index is too low, reads belong in unknown
         - If either index contains N, reads belong in unknown
-        - If I1 and RC(I2) are the same, and that value is in the list of proper indexes, reads belong in that index's file
-        - If I1 and RC(I2) are not the same, but are both in the list of proper indexes, reads belong in the hopped file.
-    - *Check the R1 and R2 quality to ensure that they BOTH pass quality filter? Or are they always output and the downstream user deals with low quality reads?*
+        - If quality of either index is too low, reads belong in unknown
+        - If either index is not in the list of proper indexes, reads belong in unknown.
+        - If I1 and RC(I2) are the same, and that value is in the list of proper indexes, reads belong in that index's files
+        - If I1 and RC(I2) are not the same, but both are in the list of proper indexes, reads belong in the hopped files.
     - Open R1 and R2 output files as specified by the bucket for appending
     - Append indexes to headers
-    - *Modify R2 to show 2:N:0:1 instead of 4:N:0:1?*
+    - Modify R2 to show 2:N:0:1 instead of 4:N:0:1 (optional, apparently)
+    - Write R1 and R2 records to files
     - Add to count dictionary of index pairs
 - Write tsv in format `index1-RCindex2  count` (Sort dictionary by values)
 
 ### Functions
-- `readRecords(fh1, fh2, fh3, fh4)`
-    - Given file handles for R1, R2, R3, and R4, reads next 4 lines in each file and returns those lines as a 2D list or signals that a file has ended.
-    - Inputs: file handles for each input fastq file
-    - Output: list of lists containing [[header, seq, +, qual], for next record in all 4 files] OR None if any file has ended
-    - Example output (EXTREMELY simplified): `[["@", "A", "+", "#"], ["@", "T", "+", "#"], ["@", "C", "+", "#"], ["@", "A", "+", "#"]]`
-    - Return statement: `return [record1, record2, record3, record4]`  OR `return None`
-- `reverseCompliment(seq)`
-    - Returns the reverse compliment of an input sequence, N is retained as N.
-    - How it could work:
-        - reverse string
-        - use translate on the reversed string to turn A into T, etc.
-    - Input: String containing sequence to be reverse complimented
-    - Output: String containing the reverse compliment.
-    - Example input: "ATGCATGCN"
-    - Example output: "NGCATGCAT"
-    - Return statement: `return RC`
+`readRecords(fh1, fh2, fh3, fh4)`
+- Given file handles for R1, R2, R3, and R4, reads next 4 lines in each file and returns those lines as a 2D list or signals that a file has ended.
+- Inputs: file handles for each input fastq file
+- Output: list of lists containing [[header, seq, +, qual], for next record in all 4 files] OR None if any file has ended
+- Example output (EXTREMELY simplified): `[["@", "A", "+", "#"], ["@", "T", "+", "#"], ["@", "C", "+", "#"], ["@", "A", "+", "#"]]`
+- Return statement: `return [record1, record2, record3, record4]`  OR `return None`
+
+`reverseCompliment(seq)`
+- Returns the reverse compliment of an input sequence, N is retained as N.
+- Input: String containing sequence to be reverse complimented
+- Output: String containing the reverse compliment.
+- How it could work:
+    - reverse string
+    - use translate on the reversed string to turn A into T, etc.
+- Example input: "ATGCATGCN"
+- Example output: "NGCATGCAT"
+- Return statement: `return RC`
