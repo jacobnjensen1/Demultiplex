@@ -68,6 +68,14 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       print(f"On Record {recordCount}")
     recordCount += 1
 
+    #ONLY FOR TESTING
+    #TODO: CHECK THIS OUT, IT'S FOR TESTING
+    if recordCount == 5000000:
+      print("Test is over")
+      break
+    #END TEST
+    #REMOVE LATER
+
     R1_record = records[0]
     I1_record = records[1]
     I2_record = records[2]
