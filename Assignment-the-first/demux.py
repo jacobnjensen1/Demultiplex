@@ -21,7 +21,7 @@ def get_args():
   parser.add_argument("-2", "--R2", help="gzipped R2 input fastq file", required=True)
   parser.add_argument("-3", "--R3", help="gzipped R3 input fastq file", required=True)
   parser.add_argument("-4", "--R4", help="gzipped R4 input fastq file", required=True)
-  #parser.add_argument("-i", "--index", help="Index file", required=True)
+  parser.add_argument("-o", "--out", help="output directory, MUST ALREADY EXIST", required=True)
   
   return parser.parse_args()
 
@@ -40,7 +40,8 @@ def addToCountDict(dict, key):
     dict[key] += 1
 
 def writeRecords(baseName, R1Header, R2Header, R1Record, R4Record):
-  with open(f"{baseName}_R1.fastq", "w") as out_1, open(f"{baseName}_R2.fastq", "w") as out_2:
+  with open(f"{args.out}/{baseName}_R1.fastq", "a") as out_1, \
+      open(f"{args.out}/{baseName}_R2.fastq", "a") as out_2:
     out_1.write(f"{R1Header}\n")
     out_2.write(f"{R2Header}\n")
     for line in R1Record[1:]:
@@ -76,7 +77,10 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     I1Seq = I1_record[SEQ_INDEX]
     rcI2Seq = bioinfo.reverse_compliment(I2_record[SEQ_INDEX])
     newR1Header = f"{R1_record[HEADER_INDEX]} {I1Seq}-{rcI2Seq}"
-    newR2Header = f"{R2_record[HEADER_INDEX]} {I1Seq}-{rcI2Seq}"
+    #change read id from 4 to 2 for R4/R2
+    newR2HeaderPortions = R2_record[HEADER_INDEX].split(" ")
+    newR2HeaderDir = f"2{newR2HeaderPortions[1][1:]}"
+    newR2Header = f"{newR2HeaderPortions[0]} {newR2HeaderDir} {I1Seq}-{rcI2Seq}"
 
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
@@ -111,14 +115,15 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     #This should not be possible, so exit and panic if it happens
     raise Exception("Something not handled! PANIC!!!!!11!1!!1!1!1!!1!!1")
 
-with open("counts.tsv", 'w') as outFile:
+with open(f"{args.out}/counts.tsv", 'w') as outFile:
   #output counts of all index pairs
   indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1])
   outFile.write("Index pair\tCount\n")
   for item in indexCounts:
     outFile.write(f"{item[0]}\t{item[1]}\n")
 
-with open("stats.tsv", 'w') as outFile:
+#TODO: maybe look at all possible good indexes?
+with open(f"{args.out}/stats.tsv", 'w') as outFile:
   #output counts of records in file groups
   percentUnknown = (unknownCount / recordCount) * 100
   percentHopped = (hoppedCount / recordCount) * 100
