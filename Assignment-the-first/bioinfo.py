@@ -16,6 +16,13 @@ __version__ = "0.4"         # Read way more about versioning here:
 DNAbases = set('ATGCNatcgn')
 RNAbases = set('AUGCNaucgn')
 
+def reverse_compliment(seq: str) -> str:
+  seq = seq[::-1]
+  x = "GCAT"
+  y = "CGTA"
+  mytable = seq.maketrans(x, y)
+  return seq.translate(mytable)
+
 def convert_phred(letter: str) -> int:
   """Converts a single character into a phred score, only works with Phred+33 for now"""
   return ord(letter) - 33
