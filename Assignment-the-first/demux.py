@@ -27,6 +27,10 @@ def get_args():
 
 args = get_args()
 
+files = {index: (open(f"{args.out}/{index}_R1.fastq", 'w'), open(f"{args.out}/{index}_R2.fastq", 'w')) for index in indexes}
+files["hopped"] = (open(f"{args.out}/hopped_R1.fastq", 'w'), open(f"{args.out}/hopped_R2.fastq", 'w'))
+files["unknown"] = (open(f"{args.out}/unknown_R1.fastq", 'w'), open(f"{args.out}/unknown_R2.fastq", 'w'))
+
 def readRecords(fh1, fh2, fh3, fh4):
   records = [[fhx.readline().strip() for _ in range(4)] for fhx in [fh1, fh2, fh3, fh4]]
   if records[0][0] == "" or records[1][0] == "" or records[2][0] == "" or records[3][0] == "":
@@ -40,14 +44,13 @@ def addToCountDict(dict, key):
     dict[key] += 1
 
 def writeRecords(baseName, R1Header, R2Header, R1Record, R4Record):
-  with open(f"{args.out}/{baseName}_R1.fastq", "a") as out_1, \
-      open(f"{args.out}/{baseName}_R2.fastq", "a") as out_2:
-    out_1.write(f"{R1Header}\n")
-    out_2.write(f"{R2Header}\n")
-    for line in R1Record[1:]:
-      out_1.write(f"{line}\n")
-    for line in R4Record[1:]:
-      out_2.write(f"{line}\n")
+  out_1,out_2 = files[baseName]
+  out_1.write(f"{R1Header}\n")
+  out_2.write(f"{R2Header}\n")
+  for line in R1Record[1:]:
+    out_1.write(f"{line}\n")
+  for line in R4Record[1:]:
+    out_2.write(f"{line}\n")
 
 indexBucketCounts = {}
 recordCount = 0
@@ -145,6 +148,10 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
     outFile.write(f"{item[0]}\t{item[1]}\n")
   outFile.write(f"hopped\t{percentHopped}\n")
   outFile.write(f"unknown\t{percentUnknown}\n")
+
+for fileTuple in files.values():
+  fileTuple[0].close()
+  fileTuple[1].close()
 
 print(f"""Finished demultiplexing {recordCount} records
     {matchedCount} were good quality and matched
