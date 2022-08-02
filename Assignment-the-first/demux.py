@@ -9,11 +9,6 @@ SEQ_INDEX = 1
 QUALITY_INDEX = 3
 QUAL_CUTOFF = 30
 
-indexes = {"GTAGCGTA","CGATCGAT","GATCAAGG","AACAGCGA","TAGCCATG",\
-  "CGGTAATC","CTCTGGAT","TACCGGAT","CTAGCTCA","CACTTCAC","GCTACTCT",\
-  "ACGATCAG","TATGGCAC","TGTTCCGT","GTCCTAAG","TCGACAAG","TCTTCGAC",\
-  "ATCATGCG","ATCGTGGT","TCGAGAGT","TCGGATTC","GATCTTGC","AGAGTCCA","AGGATAGC"}
-#{} is both dictionary and set, these don't have :, so python knows it is a set
 
 def get_args():
   parser = argparse.ArgumentParser(description="A program to summarize and visualize kmer distribution")
@@ -21,11 +16,27 @@ def get_args():
   parser.add_argument("-2", "--R2", help="gzipped R2 input fastq file", required=True)
   parser.add_argument("-3", "--R3", help="gzipped R3 input fastq file", required=True)
   parser.add_argument("-4", "--R4", help="gzipped R4 input fastq file", required=True)
+  parser.add_argument("-i", "--indexFile", help="file containing used indexes", required=True)
   parser.add_argument("-o", "--out", help="output directory, MUST ALREADY EXIST", required=True)
   
   return parser.parse_args()
 
 args = get_args()
+
+# indexes_set = {"GTAGCGTA","CGATCGAT","GATCAAGG","AACAGCGA","TAGCCATG",\
+#   "CGGTAATC","CTCTGGAT","TACCGGAT","CTAGCTCA","CACTTCAC","GCTACTCT",\
+#   "ACGATCAG","TATGGCAC","TGTTCCGT","GTCCTAAG","TCGACAAG","TCTTCGAC",\
+#   "ATCATGCG","ATCGTGGT","TCGAGAGT","TCGGATTC","GATCTTGC","AGAGTCCA","AGGATAGC"}
+# {} is both dictionary and set, these don't have :, so python knows it is a set
+
+#don't hardcode the indexes
+indexes = set()
+with open(args.indexFile) as inFile:
+  inFile.readline()
+  for line in inFile:
+    line = line.strip().split()
+    indexes.add(line[-1])
+
 
 files = {index: (open(f"{args.out}/{index}_R1.fastq", 'w'), open(f"{args.out}/{index}_R2.fastq", 'w')) for index in indexes}
 files["hopped"] = (open(f"{args.out}/hopped_R1.fastq", 'w'), open(f"{args.out}/hopped_R2.fastq", 'w'))
@@ -133,7 +144,6 @@ with open(f"{args.out}/counts.tsv", 'w') as outFile:
   for item in indexCounts:
     outFile.write(f"{item[0]}\t{item[1]}\n")
 
-#TODO: maybe look at all possible good indexes?
 with open(f"{args.out}/stats.tsv", 'w') as outFile:
   #output counts of records in file groups
   percentUnknown = (unknownCount / recordCount) * 100
