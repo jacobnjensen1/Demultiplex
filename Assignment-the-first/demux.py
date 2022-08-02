@@ -125,7 +125,7 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
 
 with open(f"{args.out}/counts.tsv", 'w') as outFile:
   #output counts of all index pairs
-  indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1])
+  indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1], reverse=True)
   outFile.write("Index pair\tCount\n")
   for item in indexCounts:
     outFile.write(f"{item[0]}\t{item[1]}\n")
@@ -138,7 +138,7 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
 
   matchedCounts = {f"{id}-{id}": indexBucketCounts[f"{id}-{id}"] for id in indexes if f"{id}-{id}" in indexBucketCounts}
   samplePercentages = {id: ((matchedCounts[id] / recordCount) * 100) for id in matchedCounts.keys()}
-  samplePercentages = sorted(samplePercentages.items(), key=lambda item: item[1])
+  samplePercentages = sorted(samplePercentages.items(), key=lambda item: item[1], reverse=True)
 
   outFile.write("Sample indexes or grouping\tPercentage of all reads\n")
   for item in samplePercentages:
