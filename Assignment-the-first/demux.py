@@ -37,7 +37,7 @@ with open(args.indexFile) as inFile:
     line = line.strip().split()
     indexes.add(line[-1])
 
-
+#Key= index, "hopped", or "unknown": value = tuple (file handle for R1, file handle for R2)
 files = {index: (open(f"{args.out}/{index}_R1.fastq", 'w'), open(f"{args.out}/{index}_R2.fastq", 'w')) for index in indexes}
 files["hopped"] = (open(f"{args.out}/hopped_R1.fastq", 'w'), open(f"{args.out}/hopped_R2.fastq", 'w'))
 files["unknown"] = (open(f"{args.out}/unknown_R1.fastq", 'w'), open(f"{args.out}/unknown_R2.fastq", 'w'))
