@@ -63,6 +63,25 @@ def writeRecords(baseName, R1Header, R2Header, R1Record, R4Record):
   for line in R4Record[1:]:
     out_2.write(f"{line}\n")
 
+def errorCorrectIndex(qIndex):
+    possibleIndexes = []
+    for index in indexes:
+        runSum = 0
+        for i in range(len(index)):
+            if qIndex[i] != index[i]:
+                runSum += 1
+            if runSum > 1:
+                break
+        if runSum <= 1:
+            possibleIndexes.append(index)
+
+    if len(possibleIndexes) > 2:
+        return qIndex
+    if len(possibleIndexes) == 1:
+        return possibleIndexes[0]
+    if len(possibleIndexes) == 0:
+        return qIndex
+
 indexBucketCounts = {}
 recordCount = 0
 matchedCount = 0
@@ -107,6 +126,10 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     #Lesie's challenge for me:
     #error correct indexes, they can be off by one.
     #I think I want to do that here, before bucketing
+    if I1Seq not in indexes:
+      I1Seq = errorCorrectIndex(I1Seq)
+    if rcI2Seq not in indexes:
+      rcI2Seq = errorCorrectIndex(rcI2Seq)
 
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
@@ -144,7 +167,7 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
 with open(f"{args.out}/counts.tsv", 'w') as outFile:
   #output counts of all index pairs
   indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1], reverse=True)
-  outFile.write('Index pair or "unknown"\tCount\n')
+  outFile.write('Index pair or "unknown"\tRecord count\n')
   for item in indexCounts:
     outFile.write(f"{item[0]}\t{item[1]}\n")
 
