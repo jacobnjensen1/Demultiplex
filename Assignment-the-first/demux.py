@@ -176,11 +176,11 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
   percentUnknown = (unknownCount / recordCount) * 100
   percentHopped = (hoppedCount / recordCount) * 100
 
-  matchedCounts = {f"{id}-{id}": indexBucketCounts[f"{id}-{id}"] for id in indexes if f"{id}-{id}" in indexBucketCounts}
+  matchedCounts = {f"{id}": indexBucketCounts[f"{id}-{id}"] for id in indexes if f"{id}-{id}" in indexBucketCounts}
   samplePercentages = {id: ((matchedCounts[id] / recordCount) * 100) for id in matchedCounts.keys()}
   samplePercentages = sorted(samplePercentages.items(), key=lambda item: item[1], reverse=True)
 
-  outFile.write("Sample indexes or grouping\tPercentage of all reads\n")
+  outFile.write("File basename\tPercentage of all reads\n")
   for item in samplePercentages:
     outFile.write(f"{item[0]}\t{item[1]}\n")
   outFile.write(f"hopped\t{percentHopped}\n")

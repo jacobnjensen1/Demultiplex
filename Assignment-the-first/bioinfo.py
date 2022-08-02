@@ -16,11 +16,12 @@ __version__ = "0.4"         # Read way more about versioning here:
 DNAbases = set('ATGCNatcgn')
 RNAbases = set('AUGCNaucgn')
 
+x = "GCAT"
+y = "CGTA"
+mytable = str.maketrans(x, y)
+
 def reverse_compliment(seq: str) -> str:
   seq = seq[::-1]
-  x = "GCAT"
-  y = "CGTA"
-  mytable = seq.maketrans(x, y)
   return seq.translate(mytable)
 
 def convert_phred(letter: str) -> int:
@@ -89,3 +90,7 @@ if __name__ == "__main__":
   assert gc_content("AATTATA") == 0
   assert gc_content("GCATGCAT") == 0.5
   print("correctly calculated GC content")
+
+  assert reverse_compliment("AATTGGCC") == "GGCCAATT"
+  assert reverse_compliment("GTCGGCTA") == "TAGCCGAC"
+  print("correctly found reverse compliment")
