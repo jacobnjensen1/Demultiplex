@@ -104,29 +104,33 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     newR2HeaderDir = f"2{newR2HeaderPortions[1][1:]}"
     newR2Header = f"{newR2HeaderPortions[0]} {newR2HeaderDir} {I1Seq}-{rcI2Seq}"
 
+    #Lesie's challenge for me:
+    #error correct indexes, they can be off by one.
+    #I think I want to do that here, before bucketing
+
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
-      addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
+      addToCountDict(indexBucketCounts, f"unknown")
       writeRecords("unknown", newR1Header, newR2Header, R1_record, R2_record)
       unknownCount += 1
       continue
     
     if bioinfo.qual_score(I1_record[QUALITY_INDEX]) < QUAL_CUTOFF or bioinfo.qual_score(I2_record[QUALITY_INDEX]) < QUAL_CUTOFF:
       #at least one index is low quality: unknown
-      addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
+      addToCountDict(indexBucketCounts, f"unknown")
       writeRecords("unknown", newR1Header, newR2Header, R1_record, R2_record)
       unknownCount += 1
       poorQualCount += 1
       continue
     
-    if I1Seq in indexes and rcI2Seq in indexes and I1Seq != rcI2Seq:
+    if I1Seq != rcI2Seq:
       #good indexes but not same: hopped
       addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
       writeRecords("hopped", newR1Header, newR2Header, R1_record, R2_record)
       hoppedCount += 1
       continue
 
-    if I1Seq in indexes and rcI2Seq in indexes and I1Seq == rcI2Seq:
+    if I1Seq == rcI2Seq:
       #good indexes and same: matched
       addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
       writeRecords(I1Seq, newR1Header, newR2Header, R1_record, R2_record)
@@ -140,7 +144,7 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
 with open(f"{args.out}/counts.tsv", 'w') as outFile:
   #output counts of all index pairs
   indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1], reverse=True)
-  outFile.write("Index pair\tCount\n")
+  outFile.write('Index pair or "unknown"\tCount\n')
   for item in indexCounts:
     outFile.write(f"{item[0]}\t{item[1]}\n")
 
