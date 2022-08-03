@@ -152,13 +152,13 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
 
     #for option 2: {bucket: count}  calculate percentage at end
 
-    #ONLY FOR TESTING		
-    #TODO: CHECK THIS OUT, IT'S FOR TESTING		
-    if recordCount == 5000000:		
-      print("Test is over")		
-      break		
-    #END TEST		
-    #REMOVE LATER
+    # #ONLY FOR TESTING		
+    # #TODO: CHECK THIS OUT, IT'S FOR TESTING		
+    # if recordCount == 5000000:		
+    #   print("Test is over")		
+    #   break		
+    # #END TEST		
+    # #REMOVE LATER
 
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
