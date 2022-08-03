@@ -43,18 +43,22 @@ files["hopped"] = (open(f"{args.out}/hopped_R1.fastq", 'w'), open(f"{args.out}/h
 files["unknown"] = (open(f"{args.out}/unknown_R1.fastq", 'w'), open(f"{args.out}/unknown_R2.fastq", 'w'))
 
 def readRecords(fh1, fh2, fh3, fh4):
+  """Reads through each file to grab one record from each, returns the records in a 2D list[[R1Header, R1Seq, ...],...]"""
   records = [[fhx.readline().strip() for _ in range(4)] for fhx in [fh1, fh2, fh3, fh4]]
   if records[0][0] == "" or records[1][0] == "" or records[2][0] == "" or records[3][0] == "":
     return None
   return records
 
 def addToCountDict(dict, key):
+  """Given a key and a dictionary, increase the count for that key"""
   if key not in dict:
     dict[key] = 1
   else:
     dict[key] += 1
 
 def writeRecords(baseName, R1Header, R2Header, R1Record, R4Record):
+  """Uses basename to find output files from files dictionary, basename can be index1, 'hopped', or 'unknown'
+  requires modified headers with indexes and full records. Writes with trailing newlines."""
   out_1,out_2 = files[baseName]
   out_1.write(f"{R1Header}\n")
   out_2.write(f"{R2Header}\n")
@@ -64,25 +68,29 @@ def writeRecords(baseName, R1Header, R2Header, R1Record, R4Record):
     out_2.write(f"{line}\n")
 
 def errorCorrectIndex(qIndex):
-    possibleIndexes = []
-    for index in indexes:
-        runSum = 0
-        for i in range(len(index)):
-            if qIndex[i] != index[i]:
-                runSum += 1
-            if runSum > 1:
-                break
-        if runSum <= 1:
-            possibleIndexes.append(index)
+  """Checks if an index is one character off from a proper index. 
+  If there is a proper index that close, it returns that index, otherwise (or if there are more options),
+  it returns the input index."""
+  possibleIndexes = []
+  for index in indexes:
+    runSum = 0
+    for i in range(len(index)):
+      if qIndex[i] != index[i]:
+        runSum += 1
+      if runSum > 1:
+        break
+    if runSum <= 1:
+      possibleIndexes.append(index)
 
-    if len(possibleIndexes) > 2:
-        return qIndex
-    if len(possibleIndexes) == 1:
-        return possibleIndexes[0]
-    if len(possibleIndexes) == 0:
-        return qIndex
+  #if there's only one possible proper index: return that
+  if len(possibleIndexes) == 1:
+    return possibleIndexes[0]
+  #if there is not only one possible index (0 or 2+): give up and return the input
+  if len(possibleIndexes) != 1:
+    return qIndex
 
 indexBucketCounts = {}
+correctionOutcomeCounts = {}
 recordCount = 0
 matchedCount = 0
 hoppedCount = 0
@@ -101,14 +109,6 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       print(f"On Record {recordCount}")
     recordCount += 1
 
-    #ONLY FOR TESTING
-    #TODO: CHECK THIS OUT, IT'S FOR TESTING
-    if recordCount == 5000000:
-      print("Test is over")
-      break
-    #END TEST
-    #REMOVE LATER
-
     R1_record = records[0]
     I1_record = records[1]
     I2_record = records[2]
@@ -123,19 +123,42 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     newR2HeaderDir = f"2{newR2HeaderPortions[1][1:]}"
     newR2Header = f"{newR2HeaderPortions[0]} {newR2HeaderDir} {I1Seq}-{rcI2Seq}"
 
+    
     #Lesie's challenge for me:
     #error correct indexes, they can be off by one.
     #I think I want to do that here, before bucketing
+
+    isCorrected = False
     if I1Seq not in indexes:
       I1Seq = errorCorrectIndex(I1Seq)
+      isCorrected = True
     if rcI2Seq not in indexes:
       rcI2Seq = errorCorrectIndex(rcI2Seq)
+      isCorrected = True
+
+    #possible index correction summaries:
+    #option 1
+    #I1Q  I1C I2Q I2C Destination Count
+    #AAA  AAT AAG AAT AAT 1
+    #whatever whatever  whatever  whatever  unknown 10000 
+
+    #option 2
+    #Destination after correction  count percentage
+    #AAT  12  x%
+    #unkown 100000  a lot%
+
+    #possible correction storage:
+    #for option 1: {bucket: {(I1Q, I1C, I2Q, I2C), count}} #messy
+
+    #for option 2: {bucket: count}  calculate percentage at end
 
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
       addToCountDict(indexBucketCounts, f"unknown")
       writeRecords("unknown", newR1Header, newR2Header, R1_record, R2_record)
       unknownCount += 1
+      if isCorrected:
+        addToCountDict(correctionOutcomeCounts, "unknown_no_correction")
       continue
     
     if bioinfo.qual_score(I1_record[QUALITY_INDEX]) < QUAL_CUTOFF or bioinfo.qual_score(I2_record[QUALITY_INDEX]) < QUAL_CUTOFF:
@@ -144,6 +167,8 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       writeRecords("unknown", newR1Header, newR2Header, R1_record, R2_record)
       unknownCount += 1
       poorQualCount += 1
+      if isCorrected:
+        addToCountDict(correctionOutcomeCounts, "unknown_low_qual")
       continue
     
     if I1Seq != rcI2Seq:
@@ -151,6 +176,8 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
       writeRecords("hopped", newR1Header, newR2Header, R1_record, R2_record)
       hoppedCount += 1
+      if isCorrected:
+        addToCountDict(correctionOutcomeCounts, "hopped")
       continue
 
     if I1Seq == rcI2Seq:
@@ -158,6 +185,8 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       addToCountDict(indexBucketCounts, f"{I1Seq}-{rcI2Seq}")
       writeRecords(I1Seq, newR1Header, newR2Header, R1_record, R2_record)
       matchedCount += 1
+      if isCorrected:
+        addToCountDict(correctionOutcomeCounts, I1Seq)
       continue
 
     #If the code gets to this point, a set of records have not been assigned to a bucket
@@ -185,6 +214,12 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
     outFile.write(f"{item[0]}\t{item[1]}\n")
   outFile.write(f"hopped\t{percentHopped}\n")
   outFile.write(f"unknown\t{percentUnknown}\n")
+
+with open(f"{args.out}/errorCorrectionOutcomes.tsv", 'w') as outFile:
+  sumOutcomes = sum(correctionOutcomeCounts.values())
+  outFile.write(f"File basename (and explanation)\tRecord count\tPercentage of records with corrected index(es)\n")
+  for dest, count in correctionOutcomeCounts.items():
+    outFile.write(f"{dest}\t{count}\t{(count/sumOutcomes) * 100}\n")
 
 for fileTuple in files.values():
   fileTuple[0].close()
