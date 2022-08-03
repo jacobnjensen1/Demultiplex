@@ -152,6 +152,14 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
 
     #for option 2: {bucket: count}  calculate percentage at end
 
+    #ONLY FOR TESTING		
+    #TODO: CHECK THIS OUT, IT'S FOR TESTING		
+    if recordCount == 5000000:		
+      print("Test is over")		
+      break		
+    #END TEST		
+    #REMOVE LATER
+
     if I1Seq not in indexes or rcI2Seq not in indexes:
       #at least one index is not in the provided list: unknown
       addToCountDict(indexBucketCounts, f"unknown")
@@ -218,7 +226,7 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
 with open(f"{args.out}/errorCorrectionOutcomes.tsv", 'w') as outFile:
   sumOutcomes = sum(correctionOutcomeCounts.values())
   outFile.write(f"File basename (and explanation)\tRecord count\tPercentage of records with corrected index(es)\n")
-  for dest, count in correctionOutcomeCounts.items():
+  for dest, count in sorted(correctionOutcomeCounts.items(), key=lambda item: item[1], reverse=True):
     outFile.write(f"{dest}\t{count}\t{(count/sumOutcomes) * 100}\n")
 
 for fileTuple in files.values():
