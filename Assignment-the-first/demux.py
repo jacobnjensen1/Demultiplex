@@ -165,8 +165,8 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       addToCountDict(indexBucketCounts, f"unknown")
       writeRecords("unknown", newR1Header, newR2Header, R1_record, R2_record)
       unknownCount += 1
-      if isCorrected:
-        addToCountDict(correctionOutcomeCounts, "unknown_no_correction")
+      # if isCorrected:
+      #   addToCountDict(correctionOutcomeCounts, "unknown_no_correction")
       continue
     
     if bioinfo.qual_score(I1_record[QUALITY_INDEX]) < QUAL_CUTOFF or bioinfo.qual_score(I2_record[QUALITY_INDEX]) < QUAL_CUTOFF:
@@ -176,7 +176,7 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
       unknownCount += 1
       poorQualCount += 1
       if isCorrected:
-        addToCountDict(correctionOutcomeCounts, "unknown_low_qual")
+        addToCountDict(correctionOutcomeCounts, "unknown")
       continue
     
     if I1Seq != rcI2Seq:
@@ -201,14 +201,15 @@ with gzip.open(args.R1, "rt") as fh1, gzip.open(args.R2, "rt") as fh2, \
     #This should not be possible, so exit and panic if it happens
     raise Exception("Something not handled! PANIC!!!!!11!1!!1!1!1!!1!!1")
 
-with open(f"{args.out}/counts.tsv", 'w') as outFile:
+with open(f"{args.out}/stats_indexes.tsv", 'w') as outFile:
   #output counts of all index pairs
   indexCounts = sorted(indexBucketCounts.items(), key=lambda item: item[1], reverse=True)
-  outFile.write('Index pair or "unknown"\tRecord count\n')
+  indexSum = sum(indexBucketCounts.values())
+  outFile.write('Index pair or "unknown"\tRecord count\tPercentage of all records\n')
   for item in indexCounts:
-    outFile.write(f"{item[0]}\t{item[1]}\n")
+    outFile.write(f"{item[0]}\t{item[1]}\t{(item[1] / indexSum) * 100}\n")
 
-with open(f"{args.out}/stats.tsv", 'w') as outFile:
+with open(f"{args.out}/stats_files.tsv", 'w') as outFile:
   #output counts of records in file groups
   percentUnknown = (unknownCount / recordCount) * 100
   percentHopped = (hoppedCount / recordCount) * 100
@@ -217,15 +218,15 @@ with open(f"{args.out}/stats.tsv", 'w') as outFile:
   samplePercentages = {id: ((matchedCounts[id] / recordCount) * 100) for id in matchedCounts.keys()}
   samplePercentages = sorted(samplePercentages.items(), key=lambda item: item[1], reverse=True)
 
-  outFile.write("File basename\tPercentage of all reads\n")
+  outFile.write("File basename\tRecord Count\tPercentage of all records\n")
   for item in samplePercentages:
-    outFile.write(f"{item[0]}\t{item[1]}\n")
-  outFile.write(f"hopped\t{percentHopped}\n")
-  outFile.write(f"unknown\t{percentUnknown}\n")
+    outFile.write(f"{item[0]}\t{matchedCounts[item[0]]}\t{item[1]}\n")
+  outFile.write(f"hopped\t{hoppedCount}\t{percentHopped}\n")
+  outFile.write(f"unknown\t{unknownCount}\t{percentUnknown}\n")
 
-with open(f"{args.out}/errorCorrectionOutcomes.tsv", 'w') as outFile:
+with open(f"{args.out}/stats_corrections.tsv", 'w') as outFile:
   sumOutcomes = sum(correctionOutcomeCounts.values())
-  outFile.write(f"File basename (and explanation)\tRecord count\tPercentage of records with corrected index(es)\n")
+  outFile.write(f"File basename\tRecord count\tPercentage of records with corrected index(es)\n")
   for dest, count in sorted(correctionOutcomeCounts.items(), key=lambda item: item[1], reverse=True):
     outFile.write(f"{dest}\t{count}\t{(count/sumOutcomes) * 100}\n")
 
