@@ -30,17 +30,6 @@ Command being timed: "python -u ./demux.py -o out -1 /projects/bgmp/shared/2017_
 	Average total size (kbytes): 0
 	Maximum resident set size (kbytes): 241816
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 786040
-	Voluntary context switches: 47974
-	Involuntary context switches: 8128
-	Swaps: 0
-	File system inputs: 0
-	File system outputs: 0
-	Socket messages sent: 0
-	Socket messages received: 0
-	Signals delivered: 0
-	Page size (bytes): 4096
 	Exit status: 0
 ```
 
